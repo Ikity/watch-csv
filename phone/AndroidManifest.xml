@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.watchcsv.viewer" android:versionCode="5" android:versionName="1.3">
+    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="35" />
+    <uses-feature android:name="android.hardware.type.watch" android:required="false" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <queries><package android:name="com.google.android.gms" /></queries>
+    <application android:label="Watch CSV Companion" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false" android:supportsRtl="true" android:icon="@drawable/ic_launcher" android:enableOnBackInvokedCallback="true">
+        <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
+        <activity android:name="com.google.android.gms.common.api.GoogleApiActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:exported="false" />
+        <service android:name=".TransferService" android:exported="false" android:foregroundServiceType="dataSync" />
+        <activity android:name=".RemoteActivity" android:exported="false" />
+        <activity android:name=".TransferActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" android:mimeType="text/*" />
+                <data android:scheme="content" android:mimeType="application/csv" />
+                <data android:scheme="content" android:mimeType="application/vnd.ms-excel" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

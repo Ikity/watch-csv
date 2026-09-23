@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.watchcsv.viewer.tests">
+    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="35" />
+    <application android:label="Watch CSV Tests" android:testOnly="true" />
+    <instrumentation android:name="dev.watchcsv.viewer.StoreInstrumentation" android:targetPackage="dev.watchcsv.viewer" android:label="CSV database integration tests" />
+</manifest>
