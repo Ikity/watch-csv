@@ -2,6 +2,8 @@
 
 [English](README.md) | [Русский](README.ru.md)
 
+[Code structure, component relationships, and libraries](ARCHITECTURE.md)
+
 An offline CSV viewer for Galaxy Watch 4 and other Wear OS watches running Android 11 / API 30 or later, with an Android phone companion for file transfer. Native Java UI, Google Wear OS Data Layer for transfers, and no app Internet permission. Both builds require Android 11 / API 30 or later.
 
 ## APK
