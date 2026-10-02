@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.watchnotes.tests">
+    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="35" />
+    <application android:label="Watch Notes storage tests" android:testOnly="true" />
+    <instrumentation android:name="dev.watchnotes.StoreInstrumentation" android:targetPackage="dev.watchnotes" android:label="Watch Notes storage tests" />
+</manifest>

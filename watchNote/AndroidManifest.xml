@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.watchnotes" android:versionCode="1" android:versionName="1.0">
+    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="35" />
+    <uses-feature android:name="android.hardware.type.watch" android:required="true" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <queries><package android:name="com.google.android.gms" /></queries>
+    <application android:label="Watch Notes" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false" android:supportsRtl="true" android:icon="@drawable/ic_launcher" android:enableOnBackInvokedCallback="true">
+        <meta-data android:name="com.google.android.wearable.standalone" android:value="true" />
+        <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
+        <activity android:name="com.google.android.gms.common.api.GoogleApiActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:exported="false" />
+        <activity android:name="dev.watchnotes.NotesActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity>
+        <service android:name="dev.watchnotes.NotesListener" android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data android:scheme="wear" android:host="*" android:pathPrefix="/watchnotes/v1/" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>
