@@ -282,7 +282,8 @@ public final class NotesActivity extends Activity {
         web.getSettings().setBlockNetworkLoads(!images);
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (url.startsWith("https://")) {
+                if (url.startsWith("about:blank#") || url.startsWith("#")) return false;
+                if (url.startsWith("https://") || url.startsWith("http://")) {
                     try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); } catch (ActivityNotFoundException ignored) { }
                 }
                 return true;

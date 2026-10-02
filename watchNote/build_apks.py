@@ -6,13 +6,14 @@ import subprocess
 import sys
 import zipfile
 from prepare_deps import ROOT, prepare
+from prepare_markdown import prepare as prepare_markdown
 
 
 def run(*args):
     subprocess.run([str(a) for a in args], check=True)
 
 
-def build(variant, libs):
+def build(variant, libs, markdown):
     work = ROOT / "build" / variant
     work.mkdir(parents=True, exist_ok=True)
     for name in ("classes", "generated", "dex"):
@@ -32,6 +33,7 @@ def build(variant, libs):
                 compiled = work / f"lib-{i}.zip"
                 run("aapt2", "compile", "--dir", res, "-o", compiled)
                 resources.extend(["-R", compiled])
+    jars.extend(markdown)
     run("aapt2", "compile", "--dir", ROOT / "res", "-o", work / "resources.zip")
     manifest = ROOT / ("phone/AndroidManifest.xml" if variant == "phone" else "AndroidManifest.xml")
     unsigned = work / "unsigned.apk"
@@ -65,5 +67,6 @@ if __name__ == "__main__":
     if any(v not in ("watch", "phone") for v in variants):
         raise SystemExit("Usage: python build_apks.py [watch] [phone]")
     libraries = prepare()
+    markdown = prepare_markdown()
     for variant in variants:
-        build(variant, libraries)
+        build(variant, libraries, markdown)

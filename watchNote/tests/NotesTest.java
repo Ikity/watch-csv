@@ -2,6 +2,7 @@ package dev.watchnotes;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
 import java.util.zip.*;
@@ -86,20 +87,49 @@ public final class NotesTest {
         check(ShareNotes.receive("Body alone","Subject").body.equals("Body alone"),"explicit subject respected");
         check(ShareNotes.receive("One line",null).title.equals("One line"),"single-line share");
         check(ShareNotes.receive(md,null).todo,"front matter share metadata");
+        String id="d272ea411fc64030846806413ca2a151";
+        Note envelope=ShareNotes.receive(id + "\nESP32-CAM\n\n" + fromJoplin.body, null);
+        check(envelope.title.equals("ESP32-CAM"),"Joplin envelope ID skipped before title");
+        check(envelope.body.equals(fromJoplin.body),"Joplin envelope preserves Markdown body");
+        check(ShareNotes.receive(id + "\nESP32-CAM\n\n" + fromJoplin.body,"ESP32-CAM").body.equals(fromJoplin.body),"Joplin subject and ID do not duplicate title");
+        check(ShareNotes.receive(id + "\nESP32-CAM\n\n" + fromJoplin.body,id).title.equals("ESP32-CAM"),"Joplin ID subject is not a title");
+        check(ShareNotes.receive(id + "\n" + md,null).title.equals(n.title),"front matter after Joplin ID");
+        check(ShareNotes.receive("RF1000A\n\n# Обзор\n",null).title.equals("RF1000A"),"Cyrillic example title remains readable");
+        check(ShareNotes.receive("Что я беру на вахту\n\n- [ ] кофта с капюшоном",null).body.contains("- [ ]"),"task list from example survives share");
         String hidden=MarkdownPreview.html(fromJoplin,false);
         check(hidden.contains("[image: pinout (resource unavailable)]"),"missing Joplin resource visible as placeholder");
         check(!hidden.contains("<img "),"hidden preview does not render image tags");
         Note image=new Note(); image.body="![Photo](https://example.org/p.png)\n<img src=\"data:image/png;base64,iVBORw0KGgo=\" alt=\"In note\">";
         String shown=MarkdownPreview.html(image,true);
-        check(shown.contains("src='https://example.org/p.png'"),"HTTPS Markdown image rendered");
-        check(shown.contains("src='data:image/png;base64,iVBORw0KGgo='"),"embedded HTML image rendered");
+        check(shown.contains("src=\"https://example.org/p.png\""),"HTTPS Markdown image rendered: " + shown);
+        check(shown.contains("src=\"data:image/png;base64,iVBORw0KGgo=\""),"embedded HTML image rendered: " + shown);
         check(MarkdownPreview.html(image,false).contains("(hidden)"),"image toggle conceals embedded data");
         image.body="<script>alert(1)</script> <img src=\"javascript:alert(1)\" alt=\"bad\">";
         check(!MarkdownPreview.html(image,true).contains("<script>"),"raw HTML escaped");
         check(!MarkdownPreview.html(image,true).contains("src='javascript:"),"unsafe image scheme rejected");
         image.body="| Pin | Safe? |\n| --- | --- |\n| D0 | yes |\n- [x] Done";
         check(MarkdownPreview.html(image,true).contains("<td>D0</td>"),"Joplin Markdown table rendered");
-        check(MarkdownPreview.html(image,true).contains("☑ Done"),"Markdown checkbox rendered");
+        check(MarkdownPreview.html(image,true).contains("type=\"checkbox\""),"Markdown checkbox rendered");
+        String complex="## Commands\n\n1. First\n   1. Sub\n2. Second\n\n> Quote\n\n---\n\n```bash\nif [ -f x ]; then\n  echo **literal**\nfi\n```\n\nA [link](https://joplinapp.org) and ~~removed~~ and ==highlighted==.\n\nFootnote[^1].\n\n[^1]: Explanation";
+        image.body=complex;
+        String rich=MarkdownPreview.html(image,true);
+        check(rich.contains("<ol>") && rich.contains("<li>Sub"),"nested ordered list");
+        check(rich.contains("<blockquote>"),"blockquote");
+        check(rich.contains("<hr"),"horizontal rule");
+        check(rich.contains("echo **literal**"),"fenced code retains Markdown syntax literally");
+        check(rich.contains("<a href=\"https://joplinapp.org\""),"safe hyperlinks");
+        check(rich.contains("<del>removed</del>") || rich.contains("<s>removed</s>"),"strikethrough extension");
+        check(rich.contains("<mark>highlighted</mark>"),"Joplin mark plugin");
+        check(rich.contains("Explanation"),"footnote definition");
+        image.body="[[toc]]\n\n# First\n\n## Second";
+        check(MarkdownPreview.html(image,true).contains("href=\"#section-2\""),"Joplin table of contents links headings");
+        image.body="<img src=\":/2d89393057e74743bc1354b6b045e315\" srcset=\"https://example.org/thumbnail.jpg 300w, https://example.org/full.jpg 1200w\" alt=\"Radio diagram\">";
+        check(MarkdownPreview.html(image,true).contains("src=\"https://example.org/thumbnail.jpg\""),"shared HTML srcset HTTPS image fallback");
+        check(!MarkdownPreview.html(image,false).contains("<img "),"srcset fallback respects image toggle");
+        image.body="<iframe src=\"https://example.org\"></iframe><a href=\"javascript:alert(1)\">bad</a><img src=\"data:text/html;base64,AAAA\">";
+        check(!MarkdownPreview.html(image,true).contains("<iframe"),"unsafe raw HTML removed");
+        check(!MarkdownPreview.html(image,true).contains("href=\"javascript:"),"unsafe link protocol removed");
+        check(!MarkdownPreview.html(image,true).contains("<img "),"unsafe data URI removed");
         ByteArrayOutputStream resourceZip=new ByteArrayOutputStream();
         try (ZipOutputStream resource=new ZipOutputStream(resourceZip)) {
             resource.putNextEntry(new ZipEntry("Notebook/Shared.md")); resource.write(shared.getBytes(StandardCharsets.UTF_8)); resource.closeEntry();
@@ -109,6 +139,17 @@ public final class NotesTest {
         check(resolved.body.contains("data:image/png;base64,AQID"),"ZIP resources resolve Joplin image IDs");
         check(resolved.body.contains(":/42ffc43de46b42d19dfb84b2b270c18b"),"unmatched links preserved");
         fails(() -> MarkdownNotes.importZip(new ByteArrayInputStream(archive("../bad.png",new byte[]{1}))),"unsafe image archive path rejected");
+        if (args.length > 0) for (String name : new String[]{"jnote", "ex3", "ex4", "ex5", "exBashWordSel"}) {
+            File example=new File(args[0],name);
+            if (!example.exists()) continue;
+            String content=new String(Files.readAllBytes(example.toPath()),StandardCharsets.UTF_8);
+            Note sample=ShareNotes.receive("d272ea411fc64030846806413ca2a151\n" + content,null);
+            check(sample.title.equals(content.substring(0,content.indexOf('\n')).trim()),"sample title " + name);
+            String rendered=MarkdownPreview.html(sample,true);
+            check(rendered.contains("</html>") && !rendered.contains("<script>"),"sample Markdown preview " + name);
+            if (name.equals("ex4")) check(rendered.contains("type=\"checkbox\""),"real checklist sample");
+            if (name.equals("exBashWordSel")) check(rendered.contains("<pre>") && rendered.contains("#!/bin/bash"),"real Bash fence sample");
+        }
         System.out.println("NotesTest: " + count + " assertions passed");
     }
 }

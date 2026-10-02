@@ -25,13 +25,13 @@ The watch and phone builds share a package ID and signing key so Google Wear OS 
 - Import Markdown/plain text, zipped Markdown directories, and Watch Notes SQLite backups.
 - Joplin interchange using **Markdown + Front Matter**.
 - Receive Joplin Android **Share → Watch Notes Companion** notes directly; share notes back through the Android chooser.
-- Markdown preview with headings, emphasis, lists, code and images. Long-press a note or its preview to show/hide images on that device.
+- CommonMark preview with Joplin-style tables, nested lists, task lists, strikethrough, footnotes, links, fenced code, sanitized inline HTML, and images. Long-press a note or its preview to show/hide images on that device.
 
-The editor works with Markdown source and offers a rendered preview. This release does not implement full CommonMark, large/binary attachment syncing, reminders, encryption, Joplin server synchronization, or the JEX archive format.
+The editor works with Markdown source and offers a rendered preview. KaTeX math, Mermaid/ABC diagrams, interactive task completion in the preview, arbitrary Joplin desktop plugins, large/binary attachment syncing, reminders, encryption, Joplin server synchronization, and JEX are not implemented. Their original Markdown source remains editable; fenced plugin blocks display as code.
 
 ## Build
 
-Use the same Termux-compatible Android tools as watch-csv: Python, JDK, `aapt2`, `d8`, `zipalign`, `apksigner`, and an Android platform JAR. The dependency resolver downloads Google Wearable 19.0.0 and its transitive libraries into this project's own `deps/` directory.
+Use the same Termux-compatible Android tools as watch-csv: Python, JDK, `aapt2`, `d8`, `zipalign`, `apksigner`, and an Android platform JAR. The build downloads Google Wearable 19.0.0 and its transitive libraries, CommonMark Java 0.27.1 with table/task/strikethrough/link/footnote extensions, autolink 0.12.0, and jsoup 1.18.3 into this project's own `deps/` directory.
 
 ```sh
 bash build.sh          # Both independent Notes applications
@@ -86,9 +86,11 @@ A document provider is needed for direct file export/import. Many watches lack o
 
 ### Direct share from Joplin Android
 
-Open a note in Joplin Android, tap **Share**, and choose **Watch Notes Companion**. Joplin sends the title on the first line followed by Markdown; Watch Notes fills **Title** and **Note (Markdown)** and opens an editable draft. Tap **Save** to store and sync it. If Joplin supplies a subject, it is used for the title. Markdown with front matter also fills category, tags, creation/update dates and to-do fields. Joplin Android's plain-text share (as in the `jnote` example) does **not** include those extra fields or the image bytes behind private `:/resource-id` links. Such links remain intact in the note and appear as unavailable placeholders in preview.
+Open a note in Joplin Android, tap **Share**, and choose **Watch Notes Companion**. Joplin may send a 32-character hexadecimal note ID on the first line, followed by the actual **title** and then the Markdown body. Watch Notes discards that leading ID, fills **Title** and **Note (Markdown)**, and opens an editable draft. Tap **Save** to store and sync it. A subject is used as the title unless it is the Joplin ID. Markdown with front matter also fills category, tags, creation/update dates and to-do fields. Joplin's plain-text share (like the `jnote`, `ex3`, `ex4`, `ex5`, and `exBashWordSel` examples) does **not** contain the image bytes behind private `:/resource-id` links. References are kept, with unavailable placeholders when no public alternative exists.
 
-To include image data, share PNG/JPEG/GIF/WebP images through Android alongside the text (or choose **Add image** in the editor). Small images are embedded as Markdown `data:image/...;base64,...` links and synchronize with the note. Each image is limited to 120 KB, and the whole note to 200,000 characters. HTTPS image links also display while connected; images are hidden when rendering is off. ZIP imports resolve `:/resource-id` image references when the ZIP contains matching resource-ID image files (such as `_resources/<id>.png`). Image files absent from a text share or archive cannot be reconstructed.
+When shared HTML `<img src=":/…">` also has a public HTTPS `srcset`, preview uses its first HTTPS URL (requires connectivity). To include offline image data, share PNG/JPEG/GIF/WebP images through Android alongside the text (or choose **Add image** in the editor). Small images are embedded as Markdown `data:image/...;base64,...` links and synchronize with the note. Each image is limited to 120 KB, and the whole note to 200,000 characters. Images are hidden when rendering is off. ZIP imports resolve `:/resource-id` image references when the ZIP contains matching resource-ID image files (such as `_resources/<id>.png`). Image files absent from a text share or archive cannot be reconstructed.
+
+Preview follows Joplin's [Markdown guide](https://joplinapp.org/help/apps/markdown/) and [CommonMark](https://spec.commonmark.org/) for headings, paragraphs/hard line breaks, emphasis, nested ordered/unordered lists, checked/unchecked task items, quotes, links/autolinks, indented/fenced code, horizontal rules and tables; it also supports strikethrough, footnotes, `==highlight==`, and `[[toc]]`/`[toc]` contents links. Shared inline HTML is sanitized before WebView display. Links to other Joplin notes (`:/ID`) are retained in source but cannot open inside Watch Notes unless the target is separately imported.
 
 ### Exported Markdown
 
@@ -125,6 +127,6 @@ adb install -r -t build/watch-notes-tests.apk
 adb shell am instrument -w dev.watchnotes.tests/dev.watchnotes.StoreInstrumentation
 ```
 
-The JVM suite covers wire validation, revision ordering, Joplin front-matter and Android shared-text examples, preview escaping/image controls, Markdown/ZIP round trips, ZIP image resource resolution and import bounds. Instrumentation covers actual SQLite saves, outbox state, duplicate delivery, concurrent-edit convergence, deletion/restoration, transactional rollback, database snapshots and backup merging. It uses isolated test databases.
+The JVM suite covers wire validation, revision ordering, Joplin front-matter and Android shared-text examples (including ID + title), CommonMark/extensions and HTML sanitization, image `srcset` fallback/visibility, Markdown/ZIP round trips, ZIP image resource resolution and import bounds. Instrumentation covers actual SQLite saves, outbox state, duplicate delivery, concurrent-edit convergence, deletion/restoration, transactional rollback, database snapshots and backup merging. It uses isolated test databases.
 
 Both application APKs have been built, signature-verified and alignment-checked in this environment. JVM tests pass. Device instrumentation and paired-device UI/transport checks require working ADB and real devices; these have not been run here. Check typing/back/rotation, both swipe directions, offline concurrent edits, reconnect/retry, Joplin desktop import, and watch-database reception on your pair before relying on the app for important notes.

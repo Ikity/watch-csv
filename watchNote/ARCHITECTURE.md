@@ -10,8 +10,8 @@ The two manifests select watch-required vs watch-optional hardware and different
 - `NotesSync`: Wear Data Layer assets, bounded payload reads, history publication/reconciliation and watch-database snapshots.
 - `NotesListener`: manifest-registered `WearableListenerService`; saves incoming records on its callback worker thread. Errors are persisted for display/retry through Sync now.
 - `MarkdownNotes`: portable Joplin Markdown/front-matter subset, ZIP interchange and resource bounds. It never extracts archive paths onto the filesystem.
-- `ShareNotes`: handles Joplin Android's first-line-title `ACTION_SEND` plain text, optional subject, and Markdown/front-matter text.
-- `MarkdownPreview`: escaped HTML renderer for a limited Markdown subset and HTTPS/inline images. WebView runs with JavaScript, file and content access disabled; image display is controlled by a per-device preference in the long-press menu.
+- `ShareNotes`: handles Joplin Android's optional leading 32-hex note ID, following title/body `ACTION_SEND` plain text, optional subject, and Markdown/front-matter text.
+- `MarkdownPreview`: CommonMark Java 0.27.1 renderer with Joplin's table/task/strikethrough/autolink/footnote extensions, sanitized via jsoup 1.18.3 before WebView display; supports safe HTTPS/inline images and public HTTPS `srcset` fallback for inaccessible Joplin resource IDs. WebView runs with JavaScript, file and content access disabled; image display is a per-device preference in the long-press menu. KaTeX, Mermaid, ABC and other plugin-specific renderers display their original fenced source rather than running JavaScript.
 
 ## Storage
 
