@@ -4,6 +4,9 @@ import android.app.Instrumentation;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.graphics.Bitmap;
+import android.util.Base64;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.*;
 
@@ -21,6 +24,19 @@ public final class StoreInstrumentation extends Instrumentation {
     }
     private void runTests() throws Exception {
         Context c=getTargetContext();
+        Note preview = new Note();
+        preview.title="Watch preview";
+        Bitmap source=Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888);
+        ByteArrayOutputStream png=new ByteArrayOutputStream();
+        source.compress(Bitmap.CompressFormat.PNG, 100, png); source.recycle();
+        preview.body="# Heading\n\n- [x] Done\n\n![Embedded](data:image/png;base64,"
+            + Base64.encodeToString(png.toByteArray(), Base64.NO_WRAP) + ")";
+        NativePreview.Prepared shown=NativePreview.prepare(preview,true);
+        check(shown.images.size()==1,"native watch preview decodes embedded image");
+        check(NativePreview.render(c,shown).toString().contains("Heading"),"native watch preview renders Markdown");
+        NativePreview.Prepared hidden=NativePreview.prepare(preview,false);
+        check(hidden.images.isEmpty() && !hidden.html.contains("<img"),"watch hide-images mode needs no image or WebView");
+        check(NativePreview.render(c,hidden).toString().contains("hidden"),"native watch preview displays hidden-image placeholder");
         String aName="notes-test-a.db", bName="notes-test-b.db";
         c.deleteDatabase(aName); c.deleteDatabase(bName);
         File snapshot=new File(c.getCacheDir(),"notes-test-snapshot.db");

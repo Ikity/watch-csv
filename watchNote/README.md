@@ -27,6 +27,8 @@ The watch and phone builds share a package ID and signing key so Google Wear OS 
 - Receive Joplin Android **Share → Watch Notes Companion** notes directly; share notes back through the Android chooser.
 - CommonMark preview with Joplin-style tables, nested lists, task lists, strikethrough, footnotes, links, fenced code, sanitized inline HTML, and images. Long-press a note or its preview to show/hide images on that device.
 
+The phone displays Markdown in WebView. The watch uses a **native TextView/Html preview**, so it works on Wear OS watches without a WebView provider. The watch converts tables into readable rows and loads up to four small/downsampled images per preview in a background task (2500 ms network timeouts and a 256 KB limit for each downloaded image). When an image is unavailable it remains a placeholder; use **Hide images** to show text without downloads. Both long-press and a visible button can toggle watch images.
+
 The editor works with Markdown source and offers a rendered preview. KaTeX math, Mermaid/ABC diagrams, interactive task completion in the preview, arbitrary Joplin desktop plugins, large/binary attachment syncing, reminders, encryption, Joplin server synchronization, and JEX are not implemented. Their original Markdown source remains editable; fenced plugin blocks display as code.
 
 ## Build
@@ -127,6 +129,6 @@ adb install -r -t build/watch-notes-tests.apk
 adb shell am instrument -w dev.watchnotes.tests/dev.watchnotes.StoreInstrumentation
 ```
 
-The JVM suite covers wire validation, revision ordering, Joplin front-matter and Android shared-text examples (including ID + title), CommonMark/extensions and HTML sanitization, image `srcset` fallback/visibility, Markdown/ZIP round trips, ZIP image resource resolution and import bounds. Instrumentation covers actual SQLite saves, outbox state, duplicate delivery, concurrent-edit convergence, deletion/restoration, transactional rollback, database snapshots and backup merging. It uses isolated test databases.
+The JVM suite covers wire validation, revision ordering, Joplin front-matter and Android shared-text examples (including ID + title), CommonMark/extensions and HTML sanitization, image `srcset` fallback/visibility, Markdown/ZIP round trips, ZIP image resource resolution and import bounds. Instrumentation additionally exercises Android's native watch-preview rendering with images on/off (without constructing a WebView), as well as SQLite saves, outbox state, duplicate delivery, concurrent-edit convergence, deletion/restoration, transactional rollback, database snapshots and backup merging. It uses isolated test databases.
 
 Both application APKs have been built, signature-verified and alignment-checked in this environment. JVM tests pass. Device instrumentation and paired-device UI/transport checks require working ADB and real devices; these have not been run here. Check typing/back/rotation, both swipe directions, offline concurrent edits, reconnect/retry, Joplin desktop import, and watch-database reception on your pair before relying on the app for important notes.

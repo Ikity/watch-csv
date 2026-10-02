@@ -275,6 +275,24 @@ public final class NotesActivity extends Activity {
         screen="preview"; base("Markdown preview");
         boolean images = getSharedPreferences("display", 0).getBoolean("images", true);
         text("Long-press the preview to turn image rendering " + (images ? "off" : "on") + ". Joplin :/ images need their resource files.");
+        if (watch) {
+            TextView rendered = text("Loading Markdown preview…");
+            rendered.setTextSize(16);
+            rendered.setMinHeight(dp(200));
+            rendered.setOnLongClickListener(v -> { imageOptions(n); return true; });
+            button(images ? "Hide images" : "Show images", () -> setImages(n, !images));
+            button("Back to editor", () -> editor(n));
+            final NativePreview.Prepared[] ready = new NativePreview.Prepared[1];
+            job(() -> { ready[0] = NativePreview.prepare(n, images); return null; }, () -> {
+                if (!screen.equals("preview")) return;
+                try { rendered.setText(NativePreview.render(this, ready[0])); }
+                catch (RuntimeException e) {
+                    rendered.setText(n.body);
+                    message("Formatted preview unavailable; showing Markdown source");
+                }
+            });
+            return;
+        }
         WebView web = new WebView(this);
         web.getSettings().setJavaScriptEnabled(false);
         web.getSettings().setAllowFileAccess(false);
@@ -292,15 +310,15 @@ public final class NotesActivity extends Activity {
         web.loadDataWithBaseURL(null, MarkdownPreview.html(n, images), "text/html", "UTF-8", null);
         web.setMinimumHeight(dp(watch ? 240 : 480));
         layout.addView(web);
-        web.setOnLongClickListener(v -> {
-            new AlertDialog.Builder(this).setTitle("Image rendering")
-                .setItems(new String[]{"Show images", "Hide images"}, (dialog, which) -> {
-                    getSharedPreferences("display", 0).edit().putBoolean("images", which == 0).apply();
-                    preview(n);
-                }).show();
-            return true;
-        });
+        web.setOnLongClickListener(v -> { imageOptions(n); return true; });
         button("Back to editor", () -> editor(n));
+    }
+    private void imageOptions(Note n) {
+        new AlertDialog.Builder(this).setTitle("Image rendering")
+            .setItems(new String[]{"Show images", "Hide images"}, (dialog, which) -> setImages(n, which == 0)).show();
+    }
+    private void setImages(Note n, boolean show) {
+        getSharedPreferences("display", 0).edit().putBoolean("images", show).apply(); preview(n);
     }
     private void saveChange(Note n) {
         job(() -> { try (NotesStore store = new NotesStore(this)) { store.save(n); } return "Saved"; }, () -> { clearDraft(); library(); queueSync(); });
